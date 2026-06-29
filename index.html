@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daily Workout">
+<meta name="theme-color" content="#0d0d12">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap" rel="stylesheet">
+<script src="react.min.js"></script>
+<script src="react-dom.min.js"></script>
+<script src="support.js"></script>
+<title>Daily Workout</title>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: #0d0d12; }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+    ::-webkit-scrollbar { display: none; }
+    * { scrollbar-width: none; }
+  </style>
+</helmet>
+
+<div style="min-height:100svh; background:#0d0d12; font-family:'DM Sans',system-ui,sans-serif; color:#f4f4f8; max-width:480px; margin:0 auto; padding-bottom:72px">
+
+  <div style="padding:44px 24px 0">
+    <div style="font-size:10px; font-weight:700; letter-spacing:0.14em; color:#5a5070; text-transform:uppercase; margin-bottom:8px">Daily Strength</div>
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:16px">
+      <div style="font-size:25px; font-weight:800; line-height:1.15; flex:1">{{ heading }}</div>
+      <div style="font-size:12px; color:#5a5070; font-weight:600; padding-bottom:3px; flex-shrink:0">{{ subtext }}</div>
+    </div>
+    <div style="margin-top:16px; height:3px; background:#1a1a24; border-radius:2px; overflow:hidden">
+      <div style="height:100%; background:#f97316; border-radius:2px; width:{{ pct }}; transition:width 0.5s ease"></div>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:8px; padding:22px 24px 0; overflow-x:auto">
+    <button onClick="{{ goWuMode }}" style="flex-shrink:0; height:34px; padding:0 14px; border-radius:17px; font-size:12px; font-weight:700; letter-spacing:0.04em; background:{{ wuModeBg }}; color:{{ wuModeClr }}; transition:all 0.18s">WARM-UP</button>
+    <div style="width:1px; background:#26263a; flex-shrink:0; margin:6px 0"></div>
+    <sc-for list="{{ days }}" as="day" hint-placeholder-count="5">
+      <button onClick="{{ day.go }}" style="flex-shrink:0; height:34px; padding:0 18px; border-radius:17px; font-size:13px; font-weight:600; background:{{ day.bg }}; color:{{ day.clr }}; transition:all 0.18s">Day {{ day.n }}</button>
+    </sc-for>
+  </div>
+
+  <!-- DAILY WARM-UP MODE -->
+  <sc-if value="{{ isWuMode }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:20px 24px 0; display:flex; flex-direction:column; gap:16px">
+      <div style="display:flex; align-items:center; gap:12px">
+        <div style="flex:1; height:3px; background:#1a1a24; border-radius:2px; overflow:hidden">
+          <div style="height:100%; background:#f97316; border-radius:2px; width:{{ wuExPct }}; transition:width 0.4s ease"></div>
+        </div>
+        <div style="font-size:11px; font-weight:700; color:#5a5070; flex-shrink:0">{{ wuExProgress }}</div>
+      </div>
+
+      <div style="background:#1a1a24; border-radius:18px; overflow:hidden; border:1px solid #26263a">
+        <div style="position:relative; background:#0d0d12; display:flex; align-items:center; justify-content:center; overflow:hidden">
+          {{ wuGifEl }}
+          <div style="position:absolute; top:12px; left:12px; background:#f97316; color:#fff; font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px; letter-spacing:0.06em">{{ wuExBadge }}</div>
+        </div>
+        <div style="padding:20px; display:flex; flex-direction:column; align-items:center; gap:16px">
+          <div style="font-size:20px; font-weight:800; color:#f4f4f8; text-align:center">{{ wuExName }}</div>
+          {{ wuTimerEl }}
+          <div style="display:flex; gap:10px; align-items:center">
+            <button onClick="{{ wuReset }}" style="width:44px; height:44px; border-radius:12px; background:#13131c; color:#5a5070; font-size:18px; display:flex; align-items:center; justify-content:center">↺</button>
+            <button onClick="{{ wuToggle }}" style="padding:0 32px; height:50px; min-width:130px; border-radius:13px; background:{{ wuPlayBg }}; color:#fff; font-size:14px; font-weight:800; letter-spacing:0.06em; box-shadow:{{ wuPlaySh }}; transition:all 0.2s">{{ wuPlayLbl }}</button>
+            <button onClick="{{ wuSkip }}" style="width:44px; height:44px; border-radius:12px; background:#13131c; color:#5a5070; font-size:18px; display:flex; align-items:center; justify-content:center">⏭</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex; flex-direction:column; gap:6px">
+        <sc-for list="{{ wuExList }}" as="ex" hint-placeholder-count="12">
+          <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:12px; background:{{ ex.bg }}; border:1.5px solid {{ ex.bdr }}; transition:all 0.2s">
+            <div style="width:24px; height:24px; border-radius:50%; background:{{ ex.dotBg }}; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:{{ ex.dotClr }}">{{ ex.dot }}</div>
+            <div style="flex:1; font-size:13px; font-weight:600; color:{{ ex.nameClr }}">{{ ex.name }}</div>
+            <div style="font-size:11px; font-weight:600; color:#5a5070; flex-shrink:0">1:00</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- PHASE TABS (hidden in warm-up mode) -->
+  <sc-if value="{{ notWuMode }}" hint-placeholder-val="{{ true }}">
+  <div style="margin:18px 24px 0; background:#13131c; border-radius:12px; padding:4px; display:flex; gap:2px">
+    <button onClick="{{ gWu }}" style="flex:1; padding:9px 0; border-radius:9px; font-size:11px; font-weight:800; letter-spacing:0.06em; background:{{ wuBg }}; color:{{ wuClr }}; transition:all 0.18s">WARM-UP</button>
+    <button onClick="{{ gEx }}" style="flex:1; padding:9px 0; border-radius:9px; font-size:11px; font-weight:800; letter-spacing:0.06em; background:{{ exBg }}; color:{{ exClr }}; transition:all 0.18s">EXERCISES</button>
+    <button onClick="{{ gCd }}" style="flex:1; padding:9px 0; border-radius:9px; font-size:11px; font-weight:800; letter-spacing:0.06em; background:{{ cdBg }}; color:{{ cdClr }}; transition:all 0.18s">COOL DOWN</button>
+  </div>
+  </sc-if>
+
+  <sc-if value="{{ isWu }}" hint-placeholder-val="{{ true }}">
+    <div style="padding:28px 24px 0; display:flex; flex-direction:column; align-items:center; gap:20px">
+      {{ timerEl }}
+      <div style="text-align:center">
+        <div style="font-size:20px; font-weight:700">{{ wuName }}</div>
+        <div style="font-size:13px; color:#9080a8; margin-top:5px">{{ wuDetail }}</div>
+        <div style="display:flex; gap:7px; justify-content:center; margin-top:12px">
+          <sc-for list="{{ wuDots }}" as="dot" hint-placeholder-count="2">
+            <div style="width:7px; height:7px; border-radius:50%; background:{{ dot.c }}; transition:background 0.3s"></div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center">
+        <button onClick="{{ tReset }}" style="width:48px; height:48px; border-radius:13px; background:#1a1a24; color:#5a5070; font-size:20px; display:flex; align-items:center; justify-content:center">↺</button>
+        <button onClick="{{ tToggle }}" style="padding:0 36px; height:54px; min-width:150px; border-radius:15px; background:{{ playBg }}; color:#fff; font-size:14px; font-weight:800; letter-spacing:0.06em; box-shadow:{{ playSh }}; transition:all 0.2s">{{ playLbl }}</button>
+        <button onClick="{{ tSkip }}" style="width:48px; height:48px; border-radius:13px; background:#1a1a24; color:#5a5070; font-size:20px; display:flex; align-items:center; justify-content:center">⏭</button>
+      </div>
+      <div style="width:100%; display:flex; flex-direction:column; gap:8px">
+        <sc-for list="{{ wuList }}" as="item" hint-placeholder-count="2">
+          <div style="display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:14px; background:{{ item.bg }}; border:1.5px solid {{ item.bdr }}; transition:all 0.2s">
+            <div style="width:26px; height:26px; border-radius:50%; background:{{ item.iBg }}; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:{{ item.iClr }}">{{ item.iLbl }}</div>
+            <div style="flex:1; min-width:0">
+              <div style="font-size:14px; font-weight:600; color:{{ item.nameClr }}">{{ item.name }}</div>
+              <div style="font-size:11px; color:#5a5070; margin-top:2px">{{ item.detail }}</div>
+            </div>
+            <div style="font-size:11px; font-weight:600; color:#5a5070; flex-shrink:0">1:00</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isEx }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:20px 24px 0; display:flex; flex-direction:column; gap:10px">
+      <sc-for list="{{ exCards }}" as="ex" hint-placeholder-count="4">
+        <div style="background:#1a1a24; border-radius:16px; padding:18px; border:1px solid {{ ex.bdr }}; transition:border-color 0.3s">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:12px; margin-bottom:14px">
+            <div style="flex:1; min-width:0">
+              <div style="font-size:15px; font-weight:700">{{ ex.name }}</div>
+              <div style="font-size:12px; color:#9080a8; margin-top:3px; font-weight:500">{{ ex.metric }}</div>
+            </div>
+            <div style="font-size:11px; font-weight:700; color:{{ ex.bClr }}; background:{{ ex.bBg }}; padding:3px 10px; border-radius:20px; flex-shrink:0">{{ ex.badge }}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:7px">
+            <div style="font-size:10px; font-weight:800; color:#5a5070; letter-spacing:0.1em; text-transform:uppercase; margin-right:3px">Sets</div>
+            <sc-for list="{{ ex.dots }}" as="s" hint-placeholder-count="3">
+              <button onClick="{{ s.go }}" style="width:38px; height:38px; border-radius:10px; background:{{ s.bg }}; color:{{ s.clr }}; font-size:14px; font-weight:800; border:2px solid {{ s.bdr }}; transition:all 0.15s">{{ s.lbl }}</button>
+            </sc-for>
+          </div>
+          <div style="display:{{ ex.demoDisplay }}; margin-top:12px; padding-top:12px; border-top:1px solid #26263a">
+            <button onClick="{{ ex.toggleGif }}" style="font-size:11px; font-weight:800; color:{{ ex.gifBtnClr }}; letter-spacing:0.06em; display:block; margin-bottom:8px">{{ ex.gifBtnLbl }}</button>
+            {{ ex.gifEl }}
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ isCd }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:28px 24px 0; display:flex; flex-direction:column; gap:14px">
+      <div style="background:#1a1a24; border-radius:18px; padding:32px 24px; border:1px solid #26263a; text-align:center">
+        <div style="font-size:11px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#5a5070; margin-bottom:20px">Cool Down · 10 minutes</div>
+        <div style="font-size:16px; color:#b0a8c8; line-height:1.75">{{ cdText }}</div>
+      </div>
+      <button onClick="{{ finishDay }}" style="width:100%; padding:18px; border-radius:14px; background:{{ finBg }}; color:#fff; font-size:14px; font-weight:800; letter-spacing:0.06em; box-shadow:{{ finSh }}; transition:all 0.25s">{{ finLbl }}</button>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  WARMUP_EXERCISES = [
+    { n: 1, name: 'Lymphatic Hops', file: '01_lymphatic_hops.gif' },
+    { n: 2, name: 'Body Wave', file: '02_body_wave.gif' },
+    { n: 3, name: 'Arm Swings', file: '03_arm_swings.gif' },
+    { n: 4, name: 'Trunk Twists (Core)', file: '04_trunk_twists_core.gif' },
+    { n: 5, name: 'Dead Arms', file: '05_dead_arms.gif' },
+    { n: 6, name: 'Golf Swings', file: '06_golf_swings.gif' },
+    { n: 7, name: 'March Slap', file: '07_march_slap.gif' },
+    { n: 8, name: 'Trunk Twists (Standing)', file: '08_trunk_twists_standing.gif' },
+    { n: 9, name: 'Ballerina', file: '09_ballerina.gif' },
+    { n: 10, name: 'Swing Step Backs', file: '10_swing_step_backs.gif' },
+    { n: 11, name: 'Chop Lunges', file: '11_chop_lunges.gif' },
+    { n: 12, name: 'Horse Stance', file: '12_horse_stance.gif' },
+  ];
+
+  P = [
+    {
+      title: 'Core Strength',
+      wu: [
+        { name: 'Dynamic Stretches', detail: 'Leg swings · Arm circles · Torso twists' },
+        { name: 'Light Cardio', detail: 'Jumping jacks · Brisk walking' }
+      ],
+      ex: [
+        { name: 'Plank', sets: 3, m: '3 × 30–60 sec', gif: 'gifs/d1_plank.gif' },
+        { name: 'Russian Twists', sets: 3, m: '3 × 20 reps', gif: 'gifs/d1_russian_twists.gif' },
+        { name: 'Leg Raises', sets: 3, m: '3 × 15 reps', gif: 'gifs/d1_leg_raises.gif' },
+        { name: 'Bicycle Crunches', sets: 3, m: '3 × 20 reps', gif: 'gifs/d1_bicycle_crunches.gif' },
+      ],
+      cd: 'Static stretching focused on the core and lower back. Hold each stretch for 30–60 seconds and breathe deeply.'
+    },
+    {
+      title: 'Shoulder Mobility',
+      wu: [
+        { name: 'Dynamic Stretches', detail: 'Arm circles · Shoulder rolls' },
+        { name: 'Light Cardio', detail: 'Rowing machine · Arm swings' }
+      ],
+      ex: [
+        { name: 'Shoulder Dislocates', sets: 3, m: '3 × 10 reps', gif: 'gifs/d2_shoulder_dislocates.gif' },
+        { name: 'Dumbbell Shoulder Press', sets: 3, m: '3 × 15 reps', gif: 'gifs/d2_dumbbell_shoulder_press.gif' },
+        { name: 'Face Pulls', sets: 3, m: '3 × 15 reps', gif: 'gifs/d2_face_pulls.gif' },
+        { name: 'Shoulder Stretch with Band', sets: 3, m: '3 × 30 sec/side', gif: 'gifs/d2_shoulder_stretch.gif' },
+      ],
+      cd: 'Static stretching focused on shoulders and upper back. Pay attention to tension and breathe through it.'
+    },
+    {
+      title: 'Plantar Fascia',
+      wu: [
+        { name: 'Dynamic Stretches', detail: 'Ankle circles · Toe raises' },
+        { name: 'Light Cardio', detail: 'Walking · Light jogging' }
+      ],
+      ex: [
+        { name: 'Tennis Ball Foot Roll', sets: 2, m: '3 min each foot', gif: 'gifs/d3_tennis_ball_foot_roll.gif' },
+        { name: 'Calf Stretch', sets: 3, m: '3 × 30 sec/leg', gif: 'gifs/d3_calf_stretch.gif' },
+        { name: 'Toe Towel Curls', sets: 3, m: '3 × 15 reps', gif: 'gifs/d3_toe_towel_curls.gif' },
+        { name: 'Standing Toe Raises', sets: 3, m: '3 × 15 reps', gif: 'gifs/d3_standing_toe_raises.gif' },
+      ],
+      cd: 'Static stretching focused on feet and calves. Gently roll your feet and hold calf stretches.'
+    },
+    {
+      title: 'Full Body',
+      wu: [
+        { name: 'Dynamic Stretches', detail: 'Full body mobility work' },
+        { name: 'Light Cardio', detail: 'Your choice of cardio' }
+      ],
+      ex: [
+        { name: 'Deadlift', sets: 3, m: '3 × 8–12 reps', gif: 'gifs/d4_deadlift.gif' },
+        { name: 'Overhead Squat', sets: 3, m: '3 × 12–15 reps', gif: 'gifs/d4_overhead_squat.gif' },
+        { name: 'Medicine Ball Slams', sets: 3, m: '3 × 15 reps', gif: 'gifs/d4_medicine_ball_slams.gif' },
+        { name: 'Kettlebell Windmill', sets: 3, m: '3 × 12 reps/side', gif: 'gifs/d4_kettlebell_windmill.gif' },
+      ],
+      cd: 'Static stretching for the whole body. Take extra time on any areas that feel tight.'
+    },
+    {
+      title: 'Mobility & Recovery',
+      wu: [
+        { name: 'Dynamic Stretches', detail: 'Gentle full body movement' },
+        { name: 'Light Cardio', detail: 'Easy walking or rowing' }
+      ],
+      ex: [
+        { name: 'Foam Rolling', sets: 1, m: '10–15 minutes total' },
+        { name: 'Yoga Flow', sets: 1, m: '20 minutes' },
+        { name: "Child's Pose", sets: 3, m: '3 × 1 min' },
+        { name: 'Downward Dog', sets: 3, m: '3 × 1 min' },
+      ],
+      cd: 'Static stretching and deep breathing exercises. Focus on your breath and letting tension release.'
+    }
+  ];
+
+  state = { d: 0, wuMode: false, ph: 'wu', wi: 0, run: false, sec: 60, sets: {}, done: {}, wuExIdx: 0, gifOpen: {} };
+  _t = null;
+
+  componentDidMount() {
+    try {
+      const v = JSON.parse(localStorage.getItem('str-v1') || '{}');
+      if (v) this.setState({ sets: v.sets || {}, done: v.done || {}, d: typeof v.d === 'number' ? v.d : 0 });
+    } catch(e) {}
+  }
+
+  componentWillUnmount() { clearInterval(this._t); }
+
+  _save() {
+    const { sets, done, d } = this.state;
+    try { localStorage.setItem('str-v1', JSON.stringify({ sets, done, d })); } catch(e) {}
+  }
+
+  _beep(end) {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      (end ? [660, 880, 1100] : [880]).forEach((f, i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = f;
+        const t = ctx.currentTime + i * 0.15;
+        g.gain.setValueAtTime(0, t);
+        g.gain.linearRampToValueAtTime(0.2, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.28);
+        o.start(t); o.stop(t + 0.32);
+      });
+    } catch(e) {}
+  }
+
+  _tick() {
+    clearInterval(this._t);
+    this._t = setInterval(() => {
+      const { sec, d, wi, wuMode, wuExIdx } = this.state;
+      if (sec <= 0) {
+        clearInterval(this._t); this._t = null;
+        this._beep(true);
+        if (wuMode) {
+          const next = wuExIdx + 1;
+          if (next < 12) this.setState({ run: false, sec: 60, wuExIdx: next });
+          else this.setState({ run: false, sec: 60, wuExIdx: 0 });
+        } else {
+          const wu = this.P[d].wu;
+          if (wi + 1 < wu.length) {
+            this.setState({ run: false, sec: 60, wi: wi + 1 });
+          } else {
+            this.setState({ run: false, sec: 60, ph: 'ex' });
+          }
+        }
+      } else {
+        if (sec === 11) this._beep(false);
+        this.setState({ sec: sec - 1 });
+      }
+    }, 1000);
+  }
+
+  renderVals() {
+    const { d, wuMode, ph, wi, run, sec, sets, done, wuExIdx, gifOpen } = this.state;
+    const p = this.P[d];
+    const isWu = ph === 'wu', isEx = ph === 'ex', isCd = ph === 'cd';
+    const stop = () => { clearInterval(this._t); this._t = null; };
+
+    const isWuMode = wuMode;
+    const notWuMode = !wuMode;
+
+    // Warm-up mode timer + gif
+    const wuEx = this.WARMUP_EXERCISES[wuExIdx] || this.WARMUP_EXERCISES[0];
+    const R2 = 70, C2 = 80;
+    const circ2 = 2 * Math.PI * R2;
+    const off2 = circ2 * (1 - sec / 60);
+    const urgent2 = sec <= 10;
+    const arc2 = urgent2 ? '#ef4444' : '#f97316';
+    const ts2 = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+
+    const wuTimerEl = React.createElement('svg', {
+      width: 160, height: 160, viewBox: '0 0 160 160',
+      style: { filter: run ? ('drop-shadow(0 0 16px ' + arc2 + '55)') : 'none', transition: 'filter 0.4s' }
+    },
+      React.createElement('circle', { cx: C2, cy: C2, r: R2, fill: '#13131c', stroke: '#1e1e2a', strokeWidth: 8 }),
+      React.createElement('circle', {
+        cx: C2, cy: C2, r: R2, fill: 'none', stroke: arc2, strokeWidth: 8,
+        strokeDasharray: circ2, strokeDashoffset: off2, strokeLinecap: 'round',
+        transform: 'rotate(-90 ' + C2 + ' ' + C2 + ')',
+        style: { transition: run ? ('stroke-dashoffset 0.95s linear' + (urgent2 ? ', stroke 0.3s' : '')) : 'stroke 0.3s' }
+      }),
+      React.createElement('text', {
+        x: C2, y: C2 + 2, textAnchor: 'middle', dominantBaseline: 'middle',
+        fill: '#f4f4f8', fontSize: 36, fontFamily: "'DM Sans',sans-serif", fontWeight: 800
+      }, ts2)
+    );
+
+    const wuGifEl = React.createElement('img', {
+      src: 'gifs/' + wuEx.file,
+      alt: wuEx.name,
+      style: { width: '100%', height: 'auto', maxHeight: '420px', objectFit: 'contain', display: 'block', background: '#0d0d12' },
+    });
+
+    const wuExPct = Math.round((wuExIdx / 12) * 100) + '%';
+    const wuExProgress = (wuExIdx + 1) + ' of 12';
+    const wuExBadge = String(wuExIdx + 1).padStart(2, '0');
+    const wuExName = wuEx.name;
+    const wuPlayBg = run ? '#22222e' : '#f97316';
+    const wuPlaySh = run ? 'none' : '0 4px 24px rgba(249,115,22,0.38)';
+    const wuPlayLbl = run ? 'PAUSE' : (sec < 60 ? 'RESUME' : 'START');
+
+    const wuExList = this.WARMUP_EXERCISES.map((ex, i) => {
+      const done_ = i < wuExIdx, cur = i === wuExIdx;
+      return {
+        name: ex.name,
+        bg: cur ? '#1e1e2a' : '#13131c',
+        bdr: cur ? '#f97316' : done_ ? '#22c55e44' : '#26263a',
+        dotBg: done_ ? '#22c55e' : cur ? '#f97316' : '#26263a',
+        dotClr: (done_ || cur) ? '#fff' : '#5a5070',
+        dot: done_ ? '✓' : String(ex.n),
+        nameClr: cur ? '#f4f4f8' : done_ ? '#9080a8' : '#5a5070',
+      };
+    });
+
+    const wuToggle = () => {
+      if (run) { stop(); this.setState({ run: false }); }
+      else { this.setState({ run: true }, () => this._tick()); }
+    };
+    const wuSkip = () => {
+      stop();
+      const next = wuExIdx + 1;
+      if (next < 12) this.setState({ run: false, sec: 60, wuExIdx: next });
+      else this.setState({ run: false, sec: 60, wuExIdx: 0 });
+    };
+    const wuReset = () => { stop(); this.setState({ run: false, sec: 60 }); };
+
+    // Day tabs
+    const goWuMode = () => { stop(); this.setState({ wuMode: true, run: false, sec: 60, wuExIdx: 0 }); };
+    const days = this.P.map((_, i) => ({
+      n: i + 1,
+      bg: i === d ? '#f97316' : '#1a1a24',
+      clr: i === d ? '#fff' : '#5a5070',
+      go: () => { stop(); this.setState({ d: i, wuMode: false, ph: 'wu', wi: 0, run: false, sec: 60 }, () => this._save()); }
+    }));
+
+    // Phase tab styles
+    const tab = (t) => ({ bg: ph === t ? '#26263a' : 'transparent', clr: ph === t ? '#f4f4f8' : '#5a5070' });
+    const wu_ = tab('wu'), ex_ = tab('ex'), cd_ = tab('cd');
+
+    // Large timer SVG
+    const R = 88, C = 110;
+    const circ = 2 * Math.PI * R;
+    const off = circ * (1 - sec / 60);
+    const urgent = sec <= 10;
+    const arc = urgent ? '#ef4444' : '#f97316';
+    const timeStr = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+
+    const timerEl = React.createElement('svg', {
+      width: 220, height: 220, viewBox: '0 0 220 220',
+      style: { filter: run ? ('drop-shadow(0 0 20px ' + arc + '55)') : 'none', transition: 'filter 0.4s' }
+    },
+      React.createElement('circle', { cx: C, cy: C, r: R, fill: '#13131c', stroke: '#1e1e2a', strokeWidth: 10 }),
+      React.createElement('circle', {
+        cx: C, cy: C, r: R, fill: 'none', stroke: arc, strokeWidth: 10,
+        strokeDasharray: circ, strokeDashoffset: off, strokeLinecap: 'round',
+        transform: 'rotate(-90 ' + C + ' ' + C + ')',
+        style: { transition: run ? ('stroke-dashoffset 0.95s linear' + (urgent ? ', stroke 0.3s' : '')) : 'stroke 0.3s' }
+      }),
+      React.createElement('text', {
+        x: C, y: C + 2, textAnchor: 'middle', dominantBaseline: 'middle',
+        fill: '#f4f4f8', fontSize: 50, fontFamily: "'DM Sans',sans-serif", fontWeight: 800
+      }, timeStr),
+      React.createElement('text', {
+        x: C, y: C + 36, textAnchor: 'middle', dominantBaseline: 'middle',
+        fill: '#5a5070', fontSize: 10, fontFamily: "'DM Sans',sans-serif", fontWeight: 700, letterSpacing: 3
+      }, 'SECONDS')
+    );
+
+    // Warmup items
+    const wuItem = p.wu[wi] || p.wu[0];
+    const wuDots = p.wu.map((_, i) => ({ c: i < wi ? '#22c55e' : i === wi ? '#f97316' : '#26263a' }));
+    const wuList = p.wu.map((w, i) => {
+      const ok = i < wi, cur = i === wi;
+      return {
+        name: w.name, detail: w.detail,
+        bg: cur ? '#1e1e2a' : '#13131c',
+        bdr: cur ? '#f97316' : ok ? '#22c55e44' : '#26263a',
+        iBg: ok ? '#22c55e' : cur ? '#f97316' : '#26263a',
+        iClr: (ok || cur) ? '#fff' : '#5a5070',
+        iLbl: ok ? '✓' : String(i + 1),
+        nameClr: cur ? '#f4f4f8' : ok ? '#9080a8' : '#5a5070',
+      };
+    });
+
+    const playBg = run ? '#22222e' : '#f97316';
+    const playSh = run ? 'none' : '0 4px 24px rgba(249,115,22,0.38)';
+    const playLbl = run ? 'PAUSE' : (sec < 60 ? 'RESUME' : 'START');
+
+    // Exercise cards with optional GIF demo
+    const exCards = p.ex.map((e, ei) => {
+      const cnt = Array.from({ length: e.sets }, (_, si) => sets[d + '-' + ei + '-' + si] ? 1 : 0).reduce((a, b) => a + b, 0);
+      const all = cnt === e.sets;
+      const gifKey = d + '-' + ei;
+      const gifIsOpen = !!(gifOpen && gifOpen[gifKey]);
+      return {
+        name: e.name, metric: e.m,
+        bdr: all ? '#22c55e55' : '#26263a',
+        badge: cnt + '/' + e.sets,
+        bClr: all ? '#22c55e' : cnt > 0 ? '#f97316' : '#5a5070',
+        bBg: all ? '#22c55e18' : cnt > 0 ? '#f9731618' : '#1e1e2a',
+        dots: Array.from({ length: e.sets }, (_, si) => {
+          const k = d + '-' + ei + '-' + si, on = !!sets[k];
+          return {
+            lbl: on ? '✓' : String(si + 1),
+            bg: on ? '#15803d' : '#1e1e2a',
+            clr: on ? '#fff' : '#5a5070',
+            bdr: on ? '#22c55e66' : 'transparent',
+            go: () => {
+              const ns = Object.assign({}, this.state.sets, { [k]: !this.state.sets[k] });
+              this.setState({ sets: ns }, () => this._save());
+            }
+          };
+        }),
+        // GIF demo
+        demoDisplay: e.gif ? 'block' : 'none',
+        gifBtnLbl: gifIsOpen ? '▲ HIDE DEMO' : '▶ WATCH DEMO',
+        gifBtnClr: gifIsOpen ? '#5a5070' : '#f97316',
+        gifEl: (e.gif && gifIsOpen) ? React.createElement('img', {
+          src: e.gif,
+          alt: e.name,
+          style: { width: '100%', borderRadius: '10px', display: 'block', background: '#0d0d12' }
+        }) : null,
+        toggleGif: e.gif ? () => {
+          const ng = Object.assign({}, this.state.gifOpen);
+          ng[gifKey] = !ng[gifKey];
+          this.setState({ gifOpen: ng });
+        } : null,
+      };
+    });
+
+    // Overall progress
+    const totalS = p.ex.reduce((a, e) => a + e.sets, 0);
+    const doneS = p.ex.reduce((acc, e, ei) =>
+      acc + Array.from({ length: e.sets }, (_, si) => sets[d + '-' + ei + '-' + si] ? 1 : 0).reduce((a, b) => a + b, 0), 0);
+    const wuF = (isEx || isCd) ? 1 : (wi / p.wu.length);
+    const exF = doneS / (totalS || 1);
+    const cdF = done[d] ? 1 : 0;
+    const pct = Math.round((wuF * 0.2 + exF * 0.6 + cdF * 0.2) * 100) + '%';
+
+    const cmpEx = p.ex.filter((e, ei) =>
+      Array.from({ length: e.sets }, (_, si) => sets[d + '-' + ei + '-' + si]).every(Boolean)
+    ).length;
+
+    const subtext = isWu
+      ? ((wi + 1) + '/' + p.wu.length + ' warm-ups')
+      : isEx
+        ? (cmpEx + '/' + p.ex.length + ' exercises')
+        : (done[d] ? 'Complete!' : 'Finishing up');
+
+    // Cool down
+    const dayDone = !!done[d];
+    const finBg = dayDone ? '#15803d' : '#f97316';
+    const finSh = dayDone ? '0 4px 20px rgba(21,128,61,0.4)' : '0 4px 20px rgba(249,115,22,0.38)';
+    const finLbl = dayDone ? 'DAY COMPLETE  ✓' : 'MARK DAY COMPLETE';
+
+    return {
+      heading: isWuMode ? 'Daily Warm-Up' : ('Day ' + (d + 1) + ' — ' + p.title),
+      subtext: isWuMode ? (wuExIdx + 1) + '/12 exercises' : subtext,
+      pct: isWuMode ? wuExPct : pct,
+      isWuMode, notWuMode,
+      goWuMode,
+      wuModeBg: isWuMode ? '#f97316' : '#1a1a24',
+      wuModeClr: isWuMode ? '#fff' : '#5a5070',
+      wuTimerEl, wuGifEl, wuExPct, wuExProgress, wuExBadge, wuExName,
+      wuPlayBg, wuPlaySh, wuPlayLbl, wuExList,
+      wuToggle, wuSkip, wuReset,
+      days,
+      gWu: () => { stop(); this.setState({ ph: 'wu', run: false }); },
+      gEx: () => { stop(); this.setState({ ph: 'ex', run: false }); },
+      gCd: () => { stop(); this.setState({ ph: 'cd', run: false }); },
+      wuBg: wu_.bg, wuClr: wu_.clr,
+      exBg: ex_.bg, exClr: ex_.clr,
+      cdBg: cd_.bg, cdClr: cd_.clr,
+      isWu, isEx, isCd,
+      timerEl,
+      wuName: wuItem.name, wuDetail: wuItem.detail,
+      wuDots, wuList,
+      playBg, playSh, playLbl,
+      tToggle: () => {
+        if (run) { stop(); this.setState({ run: false }); }
+        else { this.setState({ run: true }, () => this._tick()); }
+      },
+      tSkip: () => {
+        stop();
+        const ni = wi + 1;
+        if (ni < p.wu.length) this.setState({ run: false, sec: 60, wi: ni });
+        else this.setState({ run: false, sec: 60, ph: 'ex' });
+      },
+      tReset: () => { stop(); this.setState({ run: false, sec: 60 }); },
+      exCards,
+      cdText: p.cd,
+      finBg, finSh, finLbl,
+      finishDay: () => {
+        const nd = Object.assign({}, this.state.done, { [d]: true });
+        this.setState({ done: nd }, () => this._save());
+      }
+    };
+  }
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+</script>
+</body>
+</html>
