@@ -267,7 +267,15 @@ class Component extends DCLogic {
     } catch(e) {}
   }
 
-  componentWillUnmount() { clearInterval(this._t); }
+  componentWillUnmount() { clearInterval(this._t); this._wlRelease(); }
+
+  _wlAcquire() {
+    if (!navigator.wakeLock) return;
+    navigator.wakeLock.request('screen').then(wl => { this._wl = wl; }).catch(err => console.log('Wake lock denied:', err));
+  }
+  _wlRelease() {
+    if (this._wl) { this._wl.release().catch(() => {}); this._wl = null; }
+  }
 
   _save() {
     const { sets, done, d } = this.state;
@@ -292,10 +300,12 @@ class Component extends DCLogic {
 
   _tick() {
     clearInterval(this._t);
+    this._wlAcquire();
     this._t = setInterval(() => {
       const { sec, d, wi, wuMode, wuExIdx } = this.state;
       if (sec <= 0) {
         clearInterval(this._t); this._t = null;
+        this._wlRelease();
         this._beep(true);
         if (wuMode) {
           const next = wuExIdx + 1;
@@ -320,7 +330,7 @@ class Component extends DCLogic {
     const { d, wuMode, ph, wi, run, sec, sets, done, wuExIdx, gifOpen } = this.state;
     const p = this.P[d];
     const isWu = ph === 'wu', isEx = ph === 'ex', isCd = ph === 'cd';
-    const stop = () => { clearInterval(this._t); this._t = null; };
+    const stop = () => { clearInterval(this._t); this._t = null; this._wlRelease(); };
 
     const isWuMode = wuMode;
     const notWuMode = !wuMode;
