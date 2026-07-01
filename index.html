@@ -68,6 +68,9 @@
         <div style="padding:20px; display:flex; flex-direction:column; align-items:center; gap:16px">
           <div style="font-size:20px; font-weight:800; color:#f4f4f8; text-align:center">{{ wuExName }}</div>
           {{ wuTimerEl }}
+          <sc-if value="{{ wlWarnShow }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:11px; font-weight:600; color:#f97316; background:#f9731618; padding:6px 12px; border-radius:10px; text-align:center">⚠ Screen may lock — keep the app in view</div>
+          </sc-if>
           <div style="display:flex; gap:10px; align-items:center">
             <button onClick="{{ wuReset }}" style="width:44px; height:44px; border-radius:12px; background:#13131c; color:#5a5070; font-size:18px; display:flex; align-items:center; justify-content:center">↺</button>
             <button onClick="{{ wuToggle }}" style="padding:0 32px; height:50px; min-width:130px; border-radius:13px; background:{{ wuPlayBg }}; color:#fff; font-size:14px; font-weight:800; letter-spacing:0.06em; box-shadow:{{ wuPlaySh }}; transition:all 0.2s">{{ wuPlayLbl }}</button>
@@ -100,6 +103,9 @@
   <sc-if value="{{ isWu }}" hint-placeholder-val="{{ true }}">
     <div style="padding:28px 24px 0; display:flex; flex-direction:column; align-items:center; gap:20px">
       {{ timerEl }}
+      <sc-if value="{{ wlWarnShow }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:11px; font-weight:600; color:#f97316; background:#f9731618; padding:6px 12px; border-radius:10px; text-align:center">⚠ Screen may lock — keep the app in view</div>
+      </sc-if>
       <div style="text-align:center">
         <div style="font-size:20px; font-weight:700">{{ wuName }}</div>
         <div style="font-size:13px; color:#9080a8; margin-top:5px">{{ wuDetail }}</div>
@@ -257,7 +263,7 @@ class Component extends DCLogic {
     }
   ];
 
-  state = { d: 0, wuMode: false, ph: 'wu', wi: 0, run: false, sec: 60, sets: {}, done: {}, wuExIdx: 0, gifOpen: {} };
+  state = { d: 0, wuMode: false, ph: 'wu', wi: 0, run: false, sec: 60, sets: {}, done: {}, wuExIdx: 0, gifOpen: {}, wlWarn: false };
   _t = null;
 
   componentDidMount() {
@@ -265,15 +271,35 @@ class Component extends DCLogic {
       const v = JSON.parse(localStorage.getItem('str-v1') || '{}');
       if (v) this.setState({ sets: v.sets || {}, done: v.done || {}, d: typeof v.d === 'number' ? v.d : 0 });
     } catch(e) {}
+    this._onVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && this._wlWanted && !this._wl) this._wlAcquire();
+    };
+    document.addEventListener('visibilitychange', this._onVisibilityChange);
   }
 
-  componentWillUnmount() { clearInterval(this._t); this._wlRelease(); }
+  componentWillUnmount() {
+    clearInterval(this._t);
+    this._wlRelease();
+    document.removeEventListener('visibilitychange', this._onVisibilityChange);
+  }
 
   _wlAcquire() {
-    if (!navigator.wakeLock) return;
-    navigator.wakeLock.request('screen').then(wl => { this._wl = wl; }).catch(err => console.log('Wake lock denied:', err));
+    this._wlWanted = true;
+    if (!navigator.wakeLock) { this.setState({ wlWarn: true }); return; }
+    const token = (this._wlToken = (this._wlToken || 0) + 1);
+    navigator.wakeLock.request('screen').then(wl => {
+      if (!this._wlWanted || token !== this._wlToken) { wl.release().catch(() => {}); return; }
+      this._wl = wl;
+      this.setState({ wlWarn: false });
+      wl.addEventListener('release', () => { if (this._wl === wl) this._wl = null; });
+    }).catch(err => {
+      console.log('Wake lock denied:', err);
+      this.setState({ wlWarn: true });
+    });
   }
   _wlRelease() {
+    this._wlWanted = false;
+    this._wlToken = (this._wlToken || 0) + 1;
     if (this._wl) { this._wl.release().catch(() => {}); this._wl = null; }
   }
 
@@ -327,10 +353,11 @@ class Component extends DCLogic {
   }
 
   renderVals() {
-    const { d, wuMode, ph, wi, run, sec, sets, done, wuExIdx, gifOpen } = this.state;
+    const { d, wuMode, ph, wi, run, sec, sets, done, wuExIdx, gifOpen, wlWarn } = this.state;
     const p = this.P[d];
     const isWu = ph === 'wu', isEx = ph === 'ex', isCd = ph === 'cd';
     const stop = () => { clearInterval(this._t); this._t = null; this._wlRelease(); };
+    const wlWarnShow = run && wlWarn;
 
     const isWuMode = wuMode;
     const notWuMode = !wuMode;
@@ -537,6 +564,7 @@ class Component extends DCLogic {
       goWuMode,
       wuModeBg: isWuMode ? '#f97316' : '#1a1a24',
       wuModeClr: isWuMode ? '#fff' : '#5a5070',
+      wlWarnShow,
       wuTimerEl, wuGifEl, wuExPct, wuExProgress, wuExBadge, wuExName,
       wuPlayBg, wuPlaySh, wuPlayLbl, wuExList,
       wuToggle, wuSkip, wuReset,
