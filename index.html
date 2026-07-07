@@ -288,7 +288,7 @@ class Component extends DCLogic {
     }
   ];
 
-  state = { d: 0, wuMode: false, ph: 'wu', wi: 0, run: false, sec: 60, sets: {}, done: {}, wuExIdx: 0, gifOpen: {}, wlWarn: false, brMode: false, brRun: false, brDur: 300, brLeft: 300 };
+  state = { d: 0, wuMode: true, ph: 'wu', wi: 0, run: false, sec: 60, sets: {}, done: {}, wuExIdx: 0, gifOpen: {}, wlWarn: false, brMode: false, brRun: false, brDur: 300, brLeft: 300 };
   _t = null;
   _bt = null;
 
@@ -409,7 +409,7 @@ class Component extends DCLogic {
   renderVals() {
     const { d, wuMode, ph, wi, run, sec, sets, done, wuExIdx, gifOpen, wlWarn, brMode, brRun, brDur, brLeft } = this.state;
     const p = this.P[d];
-    const isWu = ph === 'wu' && !brMode, isEx = ph === 'ex' && !brMode, isCd = ph === 'cd' && !brMode;
+    const isWu = ph === 'wu' && !wuMode && !brMode, isEx = ph === 'ex' && !wuMode && !brMode, isCd = ph === 'cd' && !wuMode && !brMode;
     const stop = () => { clearInterval(this._t); this._t = null; this._wlRelease(); };
     const wlWarnShow = (run || brRun) && wlWarn;
 
