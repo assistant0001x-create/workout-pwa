@@ -44,6 +44,7 @@
 
   <div style="display:flex; gap:8px; padding:22px 24px 0; overflow-x:auto">
     <button onClick="{{ goWuMode }}" style="flex-shrink:0; height:34px; padding:0 14px; border-radius:17px; font-size:12px; font-weight:700; letter-spacing:0.04em; background:{{ wuModeBg }}; color:{{ wuModeClr }}; transition:all 0.18s">WARM-UP</button>
+    <button onClick="{{ goBrMode }}" style="flex-shrink:0; height:34px; padding:0 14px; border-radius:17px; font-size:12px; font-weight:700; letter-spacing:0.04em; background:{{ brModeBg }}; color:{{ brModeClr }}; transition:all 0.18s">BREATHE</button>
     <div style="width:1px; background:#26263a; flex-shrink:0; margin:6px 0"></div>
     <sc-for list="{{ days }}" as="day" hint-placeholder-count="5">
       <button onClick="{{ day.go }}" style="flex-shrink:0; height:34px; padding:0 18px; border-radius:17px; font-size:13px; font-weight:600; background:{{ day.bg }}; color:{{ day.clr }}; transition:all 0.18s">Day {{ day.n }}</button>
@@ -87,6 +88,28 @@
             <div style="font-size:11px; font-weight:600; color:#5a5070; flex-shrink:0">1:00</div>
           </div>
         </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- BREATHING MODE -->
+  <sc-if value="{{ isBrMode }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:44px 24px 0; display:flex; flex-direction:column; align-items:center; gap:24px">
+      {{ breathOrbEl }}
+      <sc-if value="{{ wlWarnShow }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:11px; font-weight:600; color:#f97316; background:#f9731618; padding:6px 12px; border-radius:10px; text-align:center">⚠ Screen may lock — keep the app in view</div>
+      </sc-if>
+      <div style="font-size:28px; font-weight:800; font-variant-numeric:tabular-nums">{{ brTime }}</div>
+      <sc-if value="{{ brPillsShow }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex; gap:8px">
+          <sc-for list="{{ brDurPills }}" as="dp" hint-placeholder-count="3">
+            <button onClick="{{ dp.go }}" style="height:34px; padding:0 18px; border-radius:17px; font-size:13px; font-weight:700; background:{{ dp.bg }}; color:{{ dp.clr }}; transition:all 0.18s">{{ dp.lbl }}</button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <div style="display:flex; gap:10px; align-items:center">
+        <button onClick="{{ brReset }}" style="width:48px; height:48px; border-radius:13px; background:#1a1a24; color:#5a5070; font-size:20px; display:flex; align-items:center; justify-content:center">↺</button>
+        <button onClick="{{ brToggle }}" style="padding:0 36px; height:54px; min-width:150px; border-radius:15px; background:{{ brPlayBg }}; color:#fff; font-size:14px; font-weight:800; letter-spacing:0.06em; box-shadow:{{ brPlaySh }}; transition:all 0.2s">{{ brPlayLbl }}</button>
       </div>
     </div>
   </sc-if>
@@ -167,6 +190,7 @@
         <div style="font-size:11px; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:#5a5070; margin-bottom:20px">Cool Down · 10 minutes</div>
         <div style="font-size:16px; color:#b0a8c8; line-height:1.75">{{ cdText }}</div>
       </div>
+      <button onClick="{{ goBrModeCd }}" style="width:100%; padding:16px; border-radius:14px; background:#1a1a24; border:1px solid #26263a; color:#7dd3fc; font-size:13px; font-weight:700; letter-spacing:0.04em; transition:all 0.2s">🫁 5-MIN BREATHING</button>
       <button onClick="{{ finishDay }}" style="width:100%; padding:18px; border-radius:14px; background:{{ finBg }}; color:#fff; font-size:14px; font-weight:800; letter-spacing:0.06em; box-shadow:{{ finSh }}; transition:all 0.25s">{{ finLbl }}</button>
     </div>
   </sc-if>
@@ -263,8 +287,9 @@ class Component extends DCLogic {
     }
   ];
 
-  state = { d: 0, wuMode: false, ph: 'wu', wi: 0, run: false, sec: 60, sets: {}, done: {}, wuExIdx: 0, gifOpen: {}, wlWarn: false };
+  state = { d: 0, wuMode: false, ph: 'wu', wi: 0, run: false, sec: 60, sets: {}, done: {}, wuExIdx: 0, gifOpen: {}, wlWarn: false, brMode: false, brRun: false, brDur: 300, brLeft: 300 };
   _t = null;
+  _bt = null;
 
   componentDidMount() {
     try {
@@ -275,12 +300,40 @@ class Component extends DCLogic {
       if (document.visibilityState === 'visible' && this._wlWanted && !this._wl) this._wlAcquire();
     };
     document.addEventListener('visibilitychange', this._onVisibilityChange);
+    this._breathSelfCheck();
   }
 
   componentWillUnmount() {
     clearInterval(this._t);
+    clearInterval(this._bt);
     this._wlRelease();
     document.removeEventListener('visibilitychange', this._onVisibilityChange);
+  }
+
+  // ponytail: box-breathing phase is a pure function of elapsed seconds — no extra state to drift out of sync
+  _breathPhase(elapsed) {
+    const pos = ((elapsed % 16) + 16) % 16;
+    const i = Math.floor(pos / 4);
+    return { word: ['Inhale', 'Hold', 'Exhale', 'Hold'][i], big: i < 2 };
+  }
+
+  // ponytail: box-breathing sequence self-check, runs once on mount
+  _breathSelfCheck() {
+    const seq = [[0, 'Inhale', true], [4, 'Hold', true], [8, 'Exhale', false], [12, 'Hold', false], [16, 'Inhale', true]];
+    for (const [e, w, b] of seq) {
+      const p = this._breathPhase(e);
+      console.assert(p.word === w && p.big === b, 'breath phase', e, p);
+    }
+  }
+
+  _breathStop() { clearInterval(this._bt); this._bt = null; this._wlRelease(); }
+  _breathTick() {
+    clearInterval(this._bt); this._wlAcquire();
+    this._bt = setInterval(() => {
+      const { brLeft } = this.state;
+      if (brLeft <= 1) { this._breathStop(); this.setState({ brRun: false, brLeft: 0 }); }
+      else this.setState({ brLeft: brLeft - 1 });
+    }, 1000);
   }
 
   _wlAcquire() {
@@ -353,14 +406,15 @@ class Component extends DCLogic {
   }
 
   renderVals() {
-    const { d, wuMode, ph, wi, run, sec, sets, done, wuExIdx, gifOpen, wlWarn } = this.state;
+    const { d, wuMode, ph, wi, run, sec, sets, done, wuExIdx, gifOpen, wlWarn, brMode, brRun, brDur, brLeft } = this.state;
     const p = this.P[d];
-    const isWu = ph === 'wu', isEx = ph === 'ex', isCd = ph === 'cd';
+    const isWu = ph === 'wu' && !brMode, isEx = ph === 'ex' && !brMode, isCd = ph === 'cd' && !brMode;
     const stop = () => { clearInterval(this._t); this._t = null; this._wlRelease(); };
-    const wlWarnShow = run && wlWarn;
+    const wlWarnShow = (run || brRun) && wlWarn;
 
-    const isWuMode = wuMode;
-    const notWuMode = !wuMode;
+    const isWuMode = wuMode && !brMode;
+    const notWuMode = !wuMode && !brMode;
+    const isBrMode = brMode;
 
     // Warm-up mode timer + gif
     const wuEx = this.WARMUP_EXERCISES[wuExIdx] || this.WARMUP_EXERCISES[0];
@@ -428,13 +482,62 @@ class Component extends DCLogic {
     const wuReset = () => { stop(); this.setState({ run: false, sec: 60 }); };
 
     // Day tabs
-    const goWuMode = () => { stop(); this.setState({ wuMode: true, run: false, sec: 60, wuExIdx: 0 }); };
+    const goWuMode = () => { stop(); this._breathStop(); this.setState({ wuMode: true, brMode: false, brRun: false, run: false, sec: 60, wuExIdx: 0 }); };
     const days = this.P.map((_, i) => ({
       n: i + 1,
       bg: i === d ? '#f97316' : '#1a1a24',
       clr: i === d ? '#fff' : '#5a5070',
-      go: () => { stop(); this.setState({ d: i, wuMode: false, ph: 'wu', wi: 0, run: false, sec: 60 }, () => this._save()); }
+      go: () => { stop(); this._breathStop(); this.setState({ d: i, wuMode: false, brMode: false, brRun: false, ph: 'wu', wi: 0, run: false, sec: 60 }, () => this._save()); }
     }));
+
+    // Breathing mode (both handlers zero-arg — bound directly to onClick, which would otherwise pass the click event as an argument)
+    const goBrMode = () => {
+      stop(); this._breathStop();
+      this.setState({ brMode: true, wuMode: false, brRun: false, brLeft: this.state.brDur });
+    };
+    const goBrModeCd = () => {
+      stop(); this._breathStop();
+      this.setState({ brMode: true, wuMode: false, brRun: false, brDur: 300, brLeft: 300 });
+    };
+    const brToggle = () => brRun
+      ? (this._breathStop(), this.setState({ brRun: false }))
+      : this.setState({ brRun: true }, () => this._breathTick());
+    const brReset = () => { this._breathStop(); this.setState({ brRun: false, brLeft: brDur }); };
+    const { word: brWord, big: brBig } = this._breathPhase(brDur - brLeft);
+    const orbScale = brRun ? (brBig ? 1 : 0.55) : 0.7;
+    const brTime = Math.floor(brLeft / 60) + ':' + String(brLeft % 60).padStart(2, '0');
+    const ORB = 240, ORB_R = 100;
+
+    const breathOrbEl = React.createElement('div', {
+      style: { width: ORB, height: ORB, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }
+    },
+      React.createElement('div', {
+        style: { position: 'absolute', width: ORB_R * 2, height: ORB_R * 2, borderRadius: '50%', border: '1.5px solid #26263a' }
+      }),
+      React.createElement('div', {
+        style: {
+          position: 'absolute', width: ORB_R * 2, height: ORB_R * 2, borderRadius: '50%',
+          background: 'radial-gradient(circle at 35% 30%, #7dd3fc, #38bdf8 55%, #0ea5e9 100%)',
+          boxShadow: brRun ? '0 0 60px #38bdf888, 0 0 20px #38bdf8aa' : '0 0 30px #38bdf855',
+          transform: 'scale(' + orbScale + ')',
+          transition: 'transform 4s ease-in-out, box-shadow 0.6s ease'
+        }
+      }),
+      React.createElement('div', {
+        style: { position: 'relative', color: '#fff', fontSize: 24, fontWeight: 800, fontFamily: "'DM Sans',sans-serif", textShadow: '0 2px 12px rgba(0,0,0,0.35)' }
+      }, brRun ? brWord : 'Breathe')
+    );
+
+    const brDurPills = [60, 180, 300].map(s => ({
+      lbl: (s / 60) + ' min',
+      bg: s === brDur ? '#0ea5e9' : '#1a1a24',
+      clr: s === brDur ? '#fff' : '#5a5070',
+      go: () => { if (!brRun) this.setState({ brDur: s, brLeft: s }); }
+    }));
+    const brPillsShow = !brRun && brLeft === brDur;
+    const brPlayBg = brRun ? '#22222e' : '#0ea5e9';
+    const brPlaySh = brRun ? 'none' : '0 4px 24px rgba(14,165,233,0.38)';
+    const brPlayLbl = brRun ? 'PAUSE' : (brLeft < brDur ? 'RESUME' : 'START');
 
     // Phase tab styles
     const tab = (t) => ({ bg: ph === t ? '#26263a' : 'transparent', clr: ph === t ? '#f4f4f8' : '#5a5070' });
@@ -564,6 +667,11 @@ class Component extends DCLogic {
       goWuMode,
       wuModeBg: isWuMode ? '#f97316' : '#1a1a24',
       wuModeClr: isWuMode ? '#fff' : '#5a5070',
+      isBrMode, goBrMode, goBrModeCd,
+      brModeBg: isBrMode ? '#0ea5e9' : '#1a1a24',
+      brModeClr: isBrMode ? '#fff' : '#5a5070',
+      breathOrbEl, brTime, brDurPills, brPillsShow,
+      brToggle, brReset, brPlayBg, brPlaySh, brPlayLbl,
       wlWarnShow,
       wuTimerEl, wuGifEl, wuExPct, wuExProgress, wuExBadge, wuExName,
       wuPlayBg, wuPlaySh, wuPlayLbl, wuExList,
