@@ -176,6 +176,9 @@
               <button onClick="{{ s.go }}" style="width:38px; height:38px; border-radius:10px; background:{{ s.bg }}; color:{{ s.clr }}; font-size:14px; font-weight:800; border:2px solid {{ s.bdr }}; transition:all 0.15s">{{ s.lbl }}</button>
             </sc-for>
           </div>
+          <div style="display:{{ ex.timerDisplay }}; margin-top:14px; padding-top:14px; border-top:1px solid #26263a">
+            {{ ex.timerEl }}
+          </div>
           <div style="display:{{ ex.demoDisplay }}; margin-top:12px; padding-top:12px; border-top:1px solid #26263a">
             <button onClick="{{ ex.toggleGif }}" style="font-size:11px; font-weight:800; color:{{ ex.gifBtnClr }}; letter-spacing:0.06em; display:block; margin-bottom:8px">{{ ex.gifBtnLbl }}</button>
             {{ ex.gifEl }}
@@ -223,7 +226,7 @@ class Component extends DCLogic {
         { name: 'Light Cardio', detail: 'Jumping jacks · Brisk walking' }
       ],
       ex: [
-        { name: 'Plank', sets: 3, m: '3 × 30–60 sec', gif: 'gifs/d1_plank.gif' },
+        { name: 'Plank', sets: 3, m: '3 × 30–60 sec', gif: 'gifs/d1_plank.gif', hold: 60 },
         { name: 'Russian Twists', sets: 3, m: '3 × 20 reps', gif: 'gifs/d1_russian_twists.gif' },
         { name: 'Leg Raises', sets: 3, m: '3 × 15 reps', gif: 'gifs/d1_leg_raises.gif' },
         { name: 'Bicycle Crunches', sets: 3, m: '3 × 20 reps', gif: 'gifs/d1_bicycle_crunches.gif' },
@@ -240,7 +243,7 @@ class Component extends DCLogic {
         { name: 'Shoulder Dislocates', sets: 3, m: '3 × 10 reps', gif: 'gifs/d2_shoulder_dislocates.gif' },
         { name: 'Dumbbell Shoulder Press', sets: 3, m: '3 × 15 reps', gif: 'gifs/d2_dumbbell_shoulder_press.gif' },
         { name: 'Face Pulls', sets: 3, m: '3 × 15 reps', gif: 'gifs/d2_face_pulls.gif' },
-        { name: 'Shoulder Stretch with Band', sets: 3, m: '3 × 30 sec/side', gif: 'gifs/d2_shoulder_stretch.gif' },
+        { name: 'Shoulder Stretch with Band', sets: 3, m: '3 × 30 sec/side', gif: 'gifs/d2_shoulder_stretch.gif', hold: 30 },
       ],
       cd: 'Static stretching focused on shoulders and upper back. Pay attention to tension and breathe through it.'
     },
@@ -251,8 +254,8 @@ class Component extends DCLogic {
         { name: 'Light Cardio', detail: 'Walking · Light jogging' }
       ],
       ex: [
-        { name: 'Tennis Ball Foot Roll', sets: 2, m: '3 min each foot', gif: 'gifs/d3_tennis_ball_foot_roll.gif' },
-        { name: 'Calf Stretch', sets: 3, m: '3 × 30 sec/leg', gif: 'gifs/d3_calf_stretch.gif' },
+        { name: 'Tennis Ball Foot Roll', sets: 2, m: '3 min each foot', gif: 'gifs/d3_tennis_ball_foot_roll.gif', hold: 180 },
+        { name: 'Calf Stretch', sets: 3, m: '3 × 30 sec/leg', gif: 'gifs/d3_calf_stretch.gif', hold: 30 },
         { name: 'Toe Towel Curls', sets: 3, m: '3 × 15 reps', gif: 'gifs/d3_toe_towel_curls.gif' },
         { name: 'Standing Toe Raises', sets: 3, m: '3 × 15 reps', gif: 'gifs/d3_standing_toe_raises.gif' },
       ],
@@ -279,18 +282,19 @@ class Component extends DCLogic {
         { name: 'Light Cardio', detail: 'Easy walking or rowing' }
       ],
       ex: [
-        { name: 'Foam Rolling', sets: 1, m: '10–15 minutes total' },
-        { name: 'Yoga Flow', sets: 1, m: '20 minutes' },
-        { name: "Child's Pose", sets: 3, m: '3 × 1 min' },
-        { name: 'Downward Dog', sets: 3, m: '3 × 1 min' },
+        { name: 'Foam Rolling', sets: 1, m: '10–15 minutes total', hold: 600 },
+        { name: 'Yoga Flow', sets: 1, m: '20 minutes', hold: 1200 },
+        { name: "Child's Pose", sets: 3, m: '3 × 1 min', hold: 60 },
+        { name: 'Downward Dog', sets: 3, m: '3 × 1 min', hold: 60 },
       ],
       cd: 'Static stretching and deep breathing exercises. Focus on your breath and letting tension release.'
     }
   ];
 
-  state = { d: 0, wuMode: true, ph: 'wu', wi: 0, run: false, sec: 60, sets: {}, done: {}, wuExIdx: 0, gifOpen: {}, wlWarn: false, brMode: false, brRun: false, brDur: 300, brLeft: 300 };
+  state = { d: 0, wuMode: true, ph: 'wu', wi: 0, run: false, sec: 60, sets: {}, done: {}, wuExIdx: 0, gifOpen: {}, wlWarn: false, brMode: false, brRun: false, brDur: 300, brLeft: 300, exTimers: {} };
   _t = null;
   _bt = null;
+  _exT = {};
 
   componentDidMount() {
     try {
@@ -307,8 +311,24 @@ class Component extends DCLogic {
   componentWillUnmount() {
     clearInterval(this._t);
     clearInterval(this._bt);
+    Object.values(this._exT).forEach(clearInterval);
+    this._exT = {};
     this._wlRelease();
     document.removeEventListener('visibilitychange', this._onVisibilityChange);
+  }
+
+  _exTick(key, hold) {
+    clearInterval(this._exT[key]);
+    this._exT[key] = setInterval(() => {
+      const cur = (this.state.exTimers[key] || { left: hold }).left;
+      if (cur <= 1) {
+        clearInterval(this._exT[key]);
+        delete this._exT[key];
+        this.setState({ exTimers: Object.assign({}, this.state.exTimers, { [key]: { left: 0, running: false } }) });
+      } else {
+        this.setState({ exTimers: Object.assign({}, this.state.exTimers, { [key]: { left: cur - 1, running: true } }) });
+      }
+    }, 1000);
   }
 
   // ponytail: box-breathing phase is a pure function of elapsed seconds — no extra state to drift out of sync
@@ -407,7 +427,7 @@ class Component extends DCLogic {
   }
 
   renderVals() {
-    const { d, wuMode, ph, wi, run, sec, sets, done, wuExIdx, gifOpen, wlWarn, brMode, brRun, brDur, brLeft } = this.state;
+    const { d, wuMode, ph, wi, run, sec, sets, done, wuExIdx, gifOpen, wlWarn, brMode, brRun, brDur, brLeft, exTimers } = this.state;
     const p = this.P[d];
     const isWu = ph === 'wu' && !wuMode && !brMode, isEx = ph === 'ex' && !wuMode && !brMode, isCd = ph === 'cd' && !wuMode && !brMode;
     const stop = () => { clearInterval(this._t); this._t = null; this._wlRelease(); };
@@ -593,12 +613,45 @@ class Component extends DCLogic {
     const playSh = run ? 'none' : '0 4px 24px rgba(249,115,22,0.38)';
     const playLbl = run ? 'PAUSE' : (sec < 60 ? 'RESUME' : 'START');
 
-    // Exercise cards with optional GIF demo
+    // Exercise cards with optional GIF demo + optional hold-timer for time-based exercises
     const exCards = p.ex.map((e, ei) => {
       const cnt = Array.from({ length: e.sets }, (_, si) => sets[d + '-' + ei + '-' + si] ? 1 : 0).reduce((a, b) => a + b, 0);
       const all = cnt === e.sets;
       const gifKey = d + '-' + ei;
       const gifIsOpen = !!(gifOpen && gifOpen[gifKey]);
+
+      // Hold-timer (only for exercises with e.hold set — a time-based hold, not reps)
+      const tKey = d + '-' + ei;
+      const hold = e.hold || 0;
+      const t = exTimers[tKey] || { left: hold, running: false };
+      const exReset = () => {
+        clearInterval(this._exT[tKey]); delete this._exT[tKey];
+        this.setState({ exTimers: Object.assign({}, this.state.exTimers, { [tKey]: { left: hold, running: false } }) });
+      };
+      const exPlay = () => {
+        const left = t.left > 0 ? t.left : hold;
+        this.setState({ exTimers: Object.assign({}, this.state.exTimers, { [tKey]: { left, running: true } }) }, () => this._exTick(tKey, hold));
+      };
+      const exStop = () => {
+        clearInterval(this._exT[tKey]); delete this._exT[tKey];
+        this.setState({ exTimers: Object.assign({}, this.state.exTimers, { [tKey]: { left: t.left, running: false } }) });
+      };
+      const tPct = hold ? Math.max(0, Math.min(100, Math.round((1 - t.left / hold) * 100))) : 0;
+      const tUrgent = t.left <= 10 && t.left > 0;
+      const tBarClr = tUrgent ? '#ef4444' : '#f97316';
+      const tTime = Math.floor(t.left / 60) + ':' + String(t.left % 60).padStart(2, '0');
+      const timerEl = hold ? React.createElement('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' } },
+        React.createElement('div', { style: { fontSize: '34px', fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: '#f4f4f8' } }, tTime),
+        React.createElement('div', { style: { width: '100%', height: '10px', background: '#13131c', borderRadius: '6px', overflow: 'hidden' } },
+          React.createElement('div', { style: { height: '100%', width: tPct + '%', background: tBarClr, borderRadius: '6px', transition: t.running ? 'width 0.95s linear, background 0.3s' : 'background 0.3s' } })
+        ),
+        React.createElement('div', { style: { display: 'flex', gap: '10px', alignItems: 'center' } },
+          React.createElement('button', { onClick: exReset, style: { width: 40, height: 40, borderRadius: 11, background: '#13131c', color: '#5a5070', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' } }, '↺'),
+          React.createElement('button', { onClick: exPlay, style: { padding: '0 22px', height: 44, minWidth: 96, borderRadius: 12, background: '#f97316', color: '#fff', fontSize: 13, fontWeight: 800, letterSpacing: '0.05em' } }, '▶ PLAY'),
+          React.createElement('button', { onClick: exStop, style: { width: 40, height: 40, borderRadius: 11, background: '#13131c', color: '#5a5070', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' } }, '■')
+        )
+      ) : null;
+
       return {
         name: e.name, metric: e.m,
         bdr: all ? '#22c55e55' : '#26263a',
@@ -632,6 +685,9 @@ class Component extends DCLogic {
           ng[gifKey] = !ng[gifKey];
           this.setState({ gifOpen: ng });
         } : null,
+        // Hold-timer
+        timerDisplay: hold ? 'block' : 'none',
+        timerEl,
       };
     });
 
