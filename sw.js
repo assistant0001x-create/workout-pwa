@@ -36,8 +36,21 @@ self.addEventListener('fetch', e => {
   if (e.request.mode === 'navigate') {
     e.respondWith(
       fetch(e.request).then(res => {
-        const clone = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
+        // Only cache a genuine, successful, same-origin HTML response as the app
+        // shell. Without these guards a transient deploy/server error (404, 500,
+        // a captive-portal redirect) gets cached as-is, and a later offline
+        // launch serves that error page instead of the last known-good app
+        // (task #2329 gate-rerun finding 1).
+        if (res.ok && res.type === 'basic' && (res.headers.get('content-type') || '').includes('text/html')) {
+          const clone = res.clone();
+          // waitUntil so the SW isn't terminated before the cache write lands,
+          // and the rejection isn't silently lost (task #2329 gate-rerun finding
+          // 2) — a detached promise here made the offline fallback
+          // nondeterministically stale despite the comment above promising it's
+          // kept fresh by every online navigation.
+          const cacheUpdate = caches.open(CACHE).then(c => c.put(e.request, clone));
+          e.waitUntil(cacheUpdate.catch(err => console.warn('sw: failed to cache navigation response', err)));
+        }
         return res;
       }).catch(() => caches.match(e.request).then(cached => cached || caches.match('./index.html')))
     );
