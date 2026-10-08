@@ -44,6 +44,7 @@
 
   <div style="display:flex; gap:8px; padding:22px 24px 0; overflow-x:auto">
     <button onClick="{{ goWuMode }}" style="flex-shrink:0; height:34px; padding:0 14px; border-radius:17px; font-size:12px; font-weight:700; letter-spacing:0.04em; background:{{ wuModeBg }}; color:{{ wuModeClr }}; transition:all 0.18s">WARM-UP</button>
+    <button onClick="{{ goWu2Mode }}" style="flex-shrink:0; height:34px; padding:0 14px; border-radius:17px; font-size:12px; font-weight:700; letter-spacing:0.04em; background:{{ wu2ModeBg }}; color:{{ wu2ModeClr }}; transition:all 0.18s">WARM-UP 2</button>
     <div style="width:1px; background:#26263a; flex-shrink:0; margin:6px 0"></div>
     <sc-for list="{{ days }}" as="day" hint-placeholder-count="5">
       <button onClick="{{ day.go }}" style="flex-shrink:0; height:34px; padding:0 18px; border-radius:17px; font-size:13px; font-weight:600; background:{{ day.bg }}; color:{{ day.clr }}; transition:all 0.18s">Day {{ day.n }}</button>
@@ -86,7 +87,7 @@
           <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:12px; background:{{ ex.bg }}; border:1.5px solid {{ ex.bdr }}; transition:all 0.2s">
             <div style="width:24px; height:24px; border-radius:50%; background:{{ ex.dotBg }}; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; color:{{ ex.dotClr }}">{{ ex.dot }}</div>
             <div style="flex:1; font-size:13px; font-weight:600; color:{{ ex.nameClr }}">{{ ex.name }}</div>
-            <div style="font-size:11px; font-weight:600; color:#5a5070; flex-shrink:0">1:00</div>
+            <div style="font-size:11px; font-weight:600; color:#5a5070; flex-shrink:0">{{ ex.amt }}</div>
           </div>
         </sc-for>
       </div>
@@ -204,18 +205,34 @@
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
   WARMUP_EXERCISES = [
-    { n: 1, name: 'Lymphatic Hops', file: '01_lymphatic_hops.gif' },
-    { n: 2, name: 'Trunk Twists (Standing)', file: '08_trunk_twists_standing.gif' },
-    { n: 3, name: 'World\'s Greatest Stretch', file: '03_worlds_greatest_stretch.gif' },
-    { n: 4, name: 'Body Wave', file: '02_body_wave.gif' },
-    { n: 5, name: 'Arm Swings', file: '03_arm_swings.gif' },
-    { n: 6, name: 'Trunk Twists (Core)', file: '04_trunk_twists_core.gif' },
-    { n: 7, name: 'Dead Arms', file: '05_dead_arms.gif' },
-    { n: 8, name: 'Golf Swings', file: '06_golf_swings.gif' },
-    { n: 9, name: 'March Slap', file: '07_march_slap.gif' },
-    { n: 10, name: 'Ballerina', file: '09_ballerina.gif' },
-    { n: 11, name: 'Swing Step Backs', file: '10_swing_step_backs.gif' },
-    { n: 12, name: 'Chop Lunges', file: '11_chop_lunges.gif' },
+    { n: 1, name: 'Lymphatic Hops', file: '01_lymphatic_hops.webp' },
+    { n: 2, name: 'Trunk Twists (Standing)', file: '08_trunk_twists_standing.webp' },
+    { n: 3, name: 'World\'s Greatest Stretch', file: '03_worlds_greatest_stretch.webp' },
+    { n: 4, name: 'Body Wave', file: '02_body_wave.webp' },
+    { n: 5, name: 'Arm Swings', file: '03_arm_swings.webp' },
+    { n: 6, name: 'Trunk Twists (Core)', file: '04_trunk_twists_core.webp' },
+    { n: 7, name: 'Dead Arms', file: '05_dead_arms.webp' },
+    { n: 8, name: 'Golf Swings', file: '06_golf_swings.webp' },
+    { n: 9, name: 'March Slap', file: '07_march_slap.webp' },
+    { n: 10, name: 'Ballerina', file: '09_ballerina.webp' },
+    { n: 11, name: 'Swing Step Backs', file: '10_swing_step_backs.webp' },
+    { n: 12, name: 'Chop Lunges', file: '11_chop_lunges.webp' },
+  ];
+
+  // Warm-Up 2: lower back & hips (CoachGreen.pt reels). reps = count-based, DONE advances; hold = timer seconds.
+  WARMUP2_EXERCISES = [
+    { n: 1, name: 'Reverse Tabletop Knee Drive', file: 'w2_01_tabletop_knee_drive.webp', reps: '20 each side' },
+    { n: 2, name: '90/90 Hip Switch with Hip Lift', file: 'w2_02_90_90_hip_switch.webp', reps: '20 each side' },
+    { n: 3, name: 'Kneeling Hip Thrust', file: 'w2_03_kneeling_hip_thrust.webp', reps: '20 reps' },
+    { n: 4, name: 'Glute Bridge (Hands on Ankles)', file: 'w2_04_glute_bridge_ankles.webp', reps: '20 reps' },
+    { n: 5, name: 'Lying Knee Drops', file: 'w2_05_lying_knee_drops.webp', reps: '10 each side' },
+    { n: 6, name: 'Prone Scorpion Leg Lift', file: 'w2_06_prone_scorpion.webp', reps: '10 each side' },
+    { n: 7, name: 'Reverse Plank', file: 'w2_07_reverse_plank.webp', hold: 30 },
+  ];
+
+  WARMUPS = [
+    { title: 'Daily Warm-Up', list: this.WARMUP_EXERCISES },
+    { title: 'Warm-Up 2 · Lower Back & Hips', list: this.WARMUP2_EXERCISES },
   ];
 
   P = [
@@ -226,10 +243,10 @@ class Component extends DCLogic {
         { name: 'Light Cardio', detail: 'Jumping jacks · Brisk walking' }
       ],
       ex: [
-        { name: 'Plank', sets: 3, m: '3 × 30–60 sec', gif: 'gifs/d1_plank.gif', hold: 60 },
-        { name: 'Russian Twists', sets: 3, m: '3 × 20 reps', gif: 'gifs/d1_russian_twists.gif' },
-        { name: 'Leg Raises', sets: 3, m: '3 × 15 reps', gif: 'gifs/d1_leg_raises.gif' },
-        { name: 'Bicycle Crunches', sets: 3, m: '3 × 20 reps', gif: 'gifs/d1_bicycle_crunches.gif' },
+        { name: 'Plank', sets: 3, m: '3 × 30–60 sec', gif: 'gifs/d1_plank.webp', hold: 60 },
+        { name: 'Russian Twists', sets: 3, m: '3 × 20 reps', gif: 'gifs/d1_russian_twists.webp' },
+        { name: 'Leg Raises', sets: 3, m: '3 × 15 reps', gif: 'gifs/d1_leg_raises.webp' },
+        { name: 'Bicycle Crunches', sets: 3, m: '3 × 20 reps', gif: 'gifs/d1_bicycle_crunches.webp' },
       ],
       cd: 'Static stretching focused on the core and lower back. Hold each stretch for 30–60 seconds and breathe deeply.'
     },
@@ -240,10 +257,10 @@ class Component extends DCLogic {
         { name: 'Light Cardio', detail: 'Rowing machine · Arm swings' }
       ],
       ex: [
-        { name: 'Shoulder Dislocates', sets: 3, m: '3 × 10 reps', gif: 'gifs/d2_shoulder_dislocates.gif' },
-        { name: 'Dumbbell Shoulder Press', sets: 3, m: '3 × 15 reps', gif: 'gifs/d2_dumbbell_shoulder_press.gif' },
-        { name: 'Face Pulls', sets: 3, m: '3 × 15 reps', gif: 'gifs/d2_face_pulls.gif' },
-        { name: 'Shoulder Stretch with Band', sets: 3, m: '3 × 30 sec/side', gif: 'gifs/d2_shoulder_stretch.gif', hold: 30 },
+        { name: 'Shoulder Dislocates', sets: 3, m: '3 × 10 reps', gif: 'gifs/d2_shoulder_dislocates.webp' },
+        { name: 'Dumbbell Shoulder Press', sets: 3, m: '3 × 15 reps', gif: 'gifs/d2_dumbbell_shoulder_press.webp' },
+        { name: 'Face Pulls', sets: 3, m: '3 × 15 reps', gif: 'gifs/d2_face_pulls.webp' },
+        { name: 'Shoulder Stretch with Band', sets: 3, m: '3 × 30 sec/side', gif: 'gifs/d2_shoulder_stretch.webp', hold: 30 },
       ],
       cd: 'Static stretching focused on shoulders and upper back. Pay attention to tension and breathe through it.'
     },
@@ -254,10 +271,10 @@ class Component extends DCLogic {
         { name: 'Light Cardio', detail: 'Walking · Light jogging' }
       ],
       ex: [
-        { name: 'Tennis Ball Foot Roll', sets: 2, m: '3 min each foot', gif: 'gifs/d3_tennis_ball_foot_roll.gif', hold: 180 },
-        { name: 'Calf Stretch', sets: 3, m: '3 × 30 sec/leg', gif: 'gifs/d3_calf_stretch.gif', hold: 30 },
-        { name: 'Toe Towel Curls', sets: 3, m: '3 × 15 reps', gif: 'gifs/d3_toe_towel_curls.gif' },
-        { name: 'Standing Toe Raises', sets: 3, m: '3 × 15 reps', gif: 'gifs/d3_standing_toe_raises.gif' },
+        { name: 'Tennis Ball Foot Roll', sets: 2, m: '3 min each foot', gif: 'gifs/d3_tennis_ball_foot_roll.webp', hold: 180 },
+        { name: 'Calf Stretch', sets: 3, m: '3 × 30 sec/leg', gif: 'gifs/d3_calf_stretch.webp', hold: 30 },
+        { name: 'Toe Towel Curls', sets: 3, m: '3 × 15 reps', gif: 'gifs/d3_toe_towel_curls.webp' },
+        { name: 'Standing Toe Raises', sets: 3, m: '3 × 15 reps', gif: 'gifs/d3_standing_toe_raises.webp' },
       ],
       cd: 'Static stretching focused on feet and calves. Gently roll your feet and hold calf stretches.'
     },
@@ -268,10 +285,10 @@ class Component extends DCLogic {
         { name: 'Light Cardio', detail: 'Your choice of cardio' }
       ],
       ex: [
-        { name: 'Deadlift', sets: 3, m: '3 × 8–12 reps', gif: 'gifs/d4_deadlift.gif' },
-        { name: 'Overhead Squat', sets: 3, m: '3 × 12–15 reps', gif: 'gifs/d4_overhead_squat.gif' },
-        { name: 'Medicine Ball Slams', sets: 3, m: '3 × 15 reps', gif: 'gifs/d4_medicine_ball_slams.gif' },
-        { name: 'Kettlebell Windmill', sets: 3, m: '3 × 12 reps/side', gif: 'gifs/d4_kettlebell_windmill.gif' },
+        { name: 'Deadlift', sets: 3, m: '3 × 8–12 reps', gif: 'gifs/d4_deadlift.webp' },
+        { name: 'Overhead Squat', sets: 3, m: '3 × 12–15 reps', gif: 'gifs/d4_overhead_squat.webp' },
+        { name: 'Medicine Ball Slams', sets: 3, m: '3 × 15 reps', gif: 'gifs/d4_medicine_ball_slams.webp' },
+        { name: 'Kettlebell Windmill', sets: 3, m: '3 × 12 reps/side', gif: 'gifs/d4_kettlebell_windmill.webp' },
       ],
       cd: 'Static stretching for the whole body. Take extra time on any areas that feel tight.'
     },
@@ -291,7 +308,7 @@ class Component extends DCLogic {
     }
   ];
 
-  state = { d: 0, wuMode: true, ph: 'wu', wi: 0, run: false, sec: 60, sets: {}, done: {}, wuExIdx: 0, gifOpen: {}, wlWarn: false, brMode: false, brRun: false, brDur: 300, brLeft: 300, exTimers: {} };
+  state = { d: 0, wuMode: true, ph: 'wu', wi: 0, run: false, sec: 60, sets: {}, done: {}, wuExIdx: 0, wuSet: 0, gifOpen: {}, wlWarn: false, brMode: false, brRun: false, brDur: 300, brLeft: 300, exTimers: {} };
   _t = null;
   _bt = null;
   _exT = {};
@@ -402,15 +419,15 @@ class Component extends DCLogic {
     clearInterval(this._t);
     this._wlAcquire();
     this._t = setInterval(() => {
-      const { sec, d, wi, wuMode, wuExIdx } = this.state;
+      const { sec, d, wi, wuMode, wuExIdx, wuSet } = this.state;
       if (sec <= 0) {
         clearInterval(this._t); this._t = null;
         this._wlRelease();
         this._beep(true);
         if (wuMode) {
-          const next = wuExIdx + 1;
-          if (next < 12) this.setState({ run: false, sec: 60, wuExIdx: next });
-          else this.setState({ run: false, sec: 60, wuExIdx: 0 });
+          const list = this.WARMUPS[wuSet].list;
+          const next = (wuExIdx + 1) % list.length;
+          this.setState({ run: false, sec: list[next].hold || 60, wuExIdx: next });
         } else {
           const wu = this.P[d].wu;
           if (wi + 1 < wu.length) {
@@ -427,7 +444,7 @@ class Component extends DCLogic {
   }
 
   renderVals() {
-    const { d, wuMode, ph, wi, run, sec, sets, done, wuExIdx, gifOpen, wlWarn, brMode, brRun, brDur, brLeft, exTimers } = this.state;
+    const { d, wuMode, ph, wi, run, sec, sets, done, wuExIdx, wuSet, gifOpen, wlWarn, brMode, brRun, brDur, brLeft, exTimers } = this.state;
     const p = this.P[d];
     const isWu = ph === 'wu' && !wuMode && !brMode, isEx = ph === 'ex' && !wuMode && !brMode, isCd = ph === 'cd' && !wuMode && !brMode;
     const stop = () => { clearInterval(this._t); this._t = null; this._wlRelease(); };
@@ -438,15 +455,20 @@ class Component extends DCLogic {
     const isBrMode = brMode;
 
     // Warm-up mode timer + gif
-    const wuEx = this.WARMUP_EXERCISES[wuExIdx] || this.WARMUP_EXERCISES[0];
+    const wuCur = this.WARMUPS[wuSet] || this.WARMUPS[0];
+    const wuN = wuCur.list.length;
+    const wuEx = wuCur.list[wuExIdx] || wuCur.list[0];
+    const wuDur = wuEx.hold || 60;
     const R2 = 70, C2 = 80;
     const circ2 = 2 * Math.PI * R2;
-    const off2 = circ2 * (1 - sec / 60);
+    const off2 = circ2 * (1 - sec / wuDur);
     const urgent2 = sec <= 10;
     const arc2 = urgent2 ? '#ef4444' : '#f97316';
     const ts2 = Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
 
-    const wuTimerEl = React.createElement('svg', {
+    const wuTimerEl = wuEx.reps ? React.createElement('div', {
+      style: { fontSize: 36, fontWeight: 800, color: '#f97316', textAlign: 'center', padding: '24px 0' }
+    }, wuEx.reps) : React.createElement('svg', {
       width: 160, height: 160, viewBox: '0 0 160 160',
       style: { filter: run ? ('drop-shadow(0 0 16px ' + arc2 + '55)') : 'none', transition: 'filter 0.4s' }
     },
@@ -469,15 +491,15 @@ class Component extends DCLogic {
       style: { width: '100%', height: 'auto', maxHeight: '420px', objectFit: 'contain', display: 'block', background: '#0d0d12' },
     });
 
-    const wuExPct = Math.round((wuExIdx / 12) * 100) + '%';
-    const wuExProgress = (wuExIdx + 1) + ' of 12';
+    const wuExPct = Math.round((wuExIdx / wuN) * 100) + '%';
+    const wuExProgress = (wuExIdx + 1) + ' of ' + wuN;
     const wuExBadge = String(wuExIdx + 1).padStart(2, '0');
     const wuExName = wuEx.name;
     const wuPlayBg = run ? '#22222e' : '#f97316';
     const wuPlaySh = run ? 'none' : '0 4px 24px rgba(249,115,22,0.38)';
-    const wuPlayLbl = run ? 'PAUSE' : (sec < 60 ? 'RESUME' : 'START');
+    const wuPlayLbl = wuEx.reps ? 'DONE ✓' : run ? 'PAUSE' : (sec < wuDur ? 'RESUME' : 'START');
 
-    const wuExList = this.WARMUP_EXERCISES.map((ex, i) => {
+    const wuExList = wuCur.list.map((ex, i) => {
       const done_ = i < wuExIdx, cur = i === wuExIdx;
       return {
         name: ex.name,
@@ -487,23 +509,26 @@ class Component extends DCLogic {
         dotClr: (done_ || cur) ? '#fff' : '#5a5070',
         dot: done_ ? '✓' : String(ex.n),
         nameClr: cur ? '#f4f4f8' : done_ ? '#9080a8' : '#5a5070',
+        amt: ex.reps || (Math.floor((ex.hold || 60) / 60) + ':' + String((ex.hold || 60) % 60).padStart(2, '0')),
       };
     });
 
-    const wuToggle = () => {
-      if (run) { stop(); this.setState({ run: false }); }
-      else { this.setState({ run: true }, () => this._tick()); }
-    };
     const wuSkip = () => {
       stop();
-      const next = wuExIdx + 1;
-      if (next < 12) this.setState({ run: false, sec: 60, wuExIdx: next });
-      else this.setState({ run: false, sec: 60, wuExIdx: 0 });
+      const next = (wuExIdx + 1) % wuN;
+      this.setState({ run: false, sec: wuCur.list[next].hold || 60, wuExIdx: next });
     };
-    const wuReset = () => { stop(); this.setState({ run: false, sec: 60 }); };
+    const wuToggle = () => {
+      if (wuEx.reps) { this._beep(false); wuSkip(); }
+      else if (run) { stop(); this.setState({ run: false }); }
+      else { this.setState({ run: true }, () => this._tick()); }
+    };
+    const wuReset = () => { stop(); this.setState({ run: false, sec: wuDur }); };
 
     // Day tabs
-    const goWuMode = () => { stop(); this._breathStop(); this.setState({ wuMode: true, brMode: false, brRun: false, run: false, sec: 60, wuExIdx: 0 }); };
+    const goWu = (set) => { stop(); this._breathStop(); this.setState({ wuMode: true, wuSet: set, brMode: false, brRun: false, run: false, sec: this.WARMUPS[set].list[0].hold || 60, wuExIdx: 0 }); };
+    const goWuMode = () => goWu(0);
+    const goWu2Mode = () => goWu(1);
     const days = this.P.map((_, i) => ({
       n: i + 1,
       bg: i === d ? '#f97316' : '#1a1a24',
@@ -717,13 +742,15 @@ class Component extends DCLogic {
     const finLbl = dayDone ? 'DAY COMPLETE  ✓' : 'MARK DAY COMPLETE';
 
     return {
-      heading: isWuMode ? 'Daily Warm-Up' : ('Day ' + (d + 1) + ' — ' + p.title),
-      subtext: isWuMode ? (wuExIdx + 1) + '/12 exercises' : subtext,
+      heading: isWuMode ? wuCur.title : ('Day ' + (d + 1) + ' — ' + p.title),
+      subtext: isWuMode ? (wuExIdx + 1) + '/' + wuN + ' exercises' : subtext,
       pct: isWuMode ? wuExPct : pct,
       isWuMode, notWuMode,
-      goWuMode,
-      wuModeBg: isWuMode ? '#f97316' : '#1a1a24',
-      wuModeClr: isWuMode ? '#fff' : '#5a5070',
+      goWuMode, goWu2Mode,
+      wuModeBg: isWuMode && wuSet === 0 ? '#f97316' : '#1a1a24',
+      wuModeClr: isWuMode && wuSet === 0 ? '#fff' : '#5a5070',
+      wu2ModeBg: isWuMode && wuSet === 1 ? '#f97316' : '#1a1a24',
+      wu2ModeClr: isWuMode && wuSet === 1 ? '#fff' : '#5a5070',
       isBrMode, goBrMode, goBrModeCd,
       brModeBg: isBrMode ? '#0ea5e9' : '#1a1a24',
       brModeClr: isBrMode ? '#fff' : '#5a5070',
